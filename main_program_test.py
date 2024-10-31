@@ -1,4 +1,3 @@
-# -*- coding utf-8 -*-
 import cv2
 import numpy as np
 import math
@@ -131,42 +130,43 @@ def angel(x1, y1, x2, y2):
 
     cos_angle = dot_product / (magnitude_midel_screen * magnitude_midel_road_vector)
     cos_angle = np.clip(cos_angle, -1.0, 1.0)
-    angle = math.degrees(math.acos(cos_angle))
+    angel = math.degrees(math.acos(cos_angle))
+    
+    if x2 < x1:
+        angel = -angel
 
-    return angle
+    return angel
 
-def pid_controller_class():
-    class pid_controller:
-        def __init__(self, Kp, Ki, Kd, setpoint):
-            self.Kp = Kp
-            self.Ki = Ki
-            self.Kd = Kd
-            self.setpoint = setpoint
-            self.previous_error = 0
-            self.integral = 0
-            self.senaste_tid = deque(maxlen=10)
-            self.senaste_error = deque(maxlen=10)
+class pid_controller:
+    def __init__(self, Kp, Ki, Kd, setpoint):
+        self.Kp = Kp
+        self.Ki = Ki
+        self.Kd = Kd
+        self.setpoint = setpoint
+        self.previous_error = 0
+        self.integral = 0
+        self.senaste_tid = deque(maxlen=10)
+        self.senaste_error = deque(maxlen=10)
+    def calculate_pid(self, current_angle, dt):
+        error = self.setpoint - current_angle
 
-        def calculate_pid(self, current_angle, dt):
-            self.setpoint = current_angle
-            error = self.setpoint - current_angle
-            self.senaste_tid.append(dt)
-            self.senaste_error.append(error)
+        self.senaste_tid.append(dt)
+        self.senaste_error.append(error)
 
-            p = self.Kp * error
-            time_array = np.array(self.senaste_tid)
-            error_array = np.array(self.senaste_error)
-            integral = cumulative_trapezoid(error_array, time_array, initial=0)
-            i = self.Ki * integral[-1] if integral.size > 0 else 0
+        p = self.Kp * error
 
-            derivative = (error - self.previous_error) / dt
-            d = self.Kd * derivative
+        time_array = np.array(self.senaste_tid)
+        error_array = np.array(self.senaste_error)
+        integral = cumulative_trapezoid(error_array, time_array, initial=0)
+        i = self.Ki * integral[-1] if integral.size > 0 else 0
 
-            self.previous_error = error
-            result = p + i + d
-            return result
+        derivative = (error - self.previous_error) / dt
+        d = self.Kd * derivative
 
-    return pid_controller
+        self.previous_error = error
+        result = p + i + d
+        return result 
+
 
 def update_servo_angle(control_signal):
     new_angle = (control_signal + 1) * 90
@@ -179,7 +179,7 @@ Ki = 0.01
 Kd = 0.01
 
 setpoint = 0
-pid = pid_controller_class()(Kp, Ki, Kd, setpoint)
+pid = pid_controller(Kp, Ki, Kd, setpoint)
 
 def is_gui_there():
     return os.environ.get('DISPLAY') is not None
@@ -194,7 +194,7 @@ servo.start(7.5)
 
 previous_time = time_module.time()
 
-# Simulate a frame (replace this with actual frame for your test)
+# Simulate a frame
 frame = np.zeros((480, 640, 3), dtype=np.uint8)
 
 try:
